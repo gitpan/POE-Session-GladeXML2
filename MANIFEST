@@ -1,0 +1,10 @@
+cookbook.glade
+cookbook.perl
+COPYING
+lib/POE/Session/GladeXML2.pm
+Makefile.PL
+MANIFEST			This list of files
+README
+test.glade
+test.pl
+META.yml                                 Module meta-data (added by MakeMaker)
