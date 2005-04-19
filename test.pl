@@ -31,7 +31,7 @@ sub new {
 	       #package_states => [ $class => {_start => "package_start" }],
 	       object_states => [ $self => {_start => "package_start" }],
 	    );
-   #$self->{'session'} = $s;
+   $self->{'session'} = $s;
    return $self;
 }
 

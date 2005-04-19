@@ -1,5 +1,3 @@
-cookbook.glade
-cookbook.perl
 COPYING
 lib/POE/Session/GladeXML2.pm
 Makefile.PL

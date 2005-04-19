@@ -6,7 +6,7 @@ use warnings;
 #TODO - this should be in POE::Session
 sub SE_DATA () { 3 }
 
-our $VERSION = '0.3.0';
+our $VERSION = '0.3.1';
 use base qw(POE::Session);
 
 # local var we needn't worry about __PACKAGE__ being interpreted as
@@ -68,7 +68,7 @@ sub _signal_query {
   $signal_name =~ s/_/-/g;
 
   my $class = ref $object || $object;
-  warn "$class, $signal_name";
+  #warn "$class, $signal_name";
   if (!exists $sig_data{$class}) {
     my @sigs = Glib::Type->list_signals ($class);
     $sig_data{$class} = \@sigs;
@@ -91,30 +91,37 @@ sub _signal_query {
 }
 
 sub _session_autoconnect_helper {
-  my ($handler_name, $object, $signal_name, $signal_data, 
-      $connect_object, $after, $myobject) = @_;
+  my ($handler_name, $gobject, $signal_name, $signal_data,
+      $connect_object, $is_after, $session_object, $event_name) = @_;
 
-  $poe_kernel->state ($handler_name, $myobject);
+  # So things like Glade2::Widget can call this with an extra
+  # parameter that defines the event name, so you can have
+  # more than one event use the same handler. Glade2::Widget
+  # uses that to allow more than one widget to exist in the
+  # same session
+  $event_name = $handler_name unless defined $event_name;
+
+  $poe_kernel->state ($event_name, $session_object, $handler_name);
   my $session = $poe_kernel->get_active_session;
   my $handler;
 
-  # not released yet
-  #my $sig_info = $object->signal_query ($signal_name);
+  ## not released yet
+  #my $sig_info = $gobject->signal_query ($signal_name);
   # instead we do this
-  my $sig_info = _signal_query ($object, $signal_name);
+  my $sig_info = _signal_query ($gobject, $signal_name);
 
   if (!defined $sig_info->{'return_type'}) {
-  	$handler = $session->postback ($handler_name);
+	$handler = $session->postback ($event_name);
   } else {
-  	$handler = $session->callback ($handler_name);
+	$handler = $session->callback ($event_name);
   }
 
   if ($connect_object) {
-    my ($func) = $after ? "signal_connect_object_after" : "signal_connect_object";
-    $object->$func ($signal_name, $connect_object, $handler, $signal_data);
+    my ($func) = $is_after ? "signal_connect_object_after" : "signal_connect_object";
+    $gobject->$func ($signal_name, $connect_object, $handler, $signal_data);
   } else {
-    my ($func) = $after ? "signal_connect_after" : "signal_connect";
-    $object->$func ($signal_name, $handler, $signal_data);
+    my ($func) = $is_after ? "signal_connect_after" : "signal_connect";
+    $gobject->$func ($signal_name, $handler, $signal_data);
   }
 }
 
