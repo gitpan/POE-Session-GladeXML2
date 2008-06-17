@@ -6,16 +6,16 @@ use warnings;
 #TODO - this should be in POE::Session
 sub SE_DATA () { 3 }
 
-our $VERSION = '0.3.1';
+our $VERSION = '0.40';
 use base qw(POE::Session);
 
-# local var we needn't worry about __PACKAGE__ being interpreted as
+# local var so we needn't worry about __PACKAGE__ being interpreted as
 # a string literal
 my $pkg = __PACKAGE__;
 
 =head1 NAME
 
-POE::Session::GladeXML2 -- emit POE events for Gtk2 callbacks
+POE::Session::GladeXML2 - emit POE events for Gtk2 callbacks
 
 =head1 SYNOPSIS
 
@@ -60,36 +60,6 @@ use Gtk2 -init;
 use POE;
 use Gtk2::GladeXML;
 
-# Temporary hackery until g_signal_query gets exposed as
-# Glib::Object->signal_query.
-my %sig_data;
-sub _signal_query {
-  my ($object, $signal_name) = @_;
-  $signal_name =~ s/_/-/g;
-
-  my $class = ref $object || $object;
-  #warn "$class, $signal_name";
-  if (!exists $sig_data{$class}) {
-    my @sigs = Glib::Type->list_signals ($class);
-    $sig_data{$class} = \@sigs;
-  }
-  foreach my $sig_info (@{$sig_data{$class}}) {
-    return $sig_info
-      if ($sig_info->{'signal_name'} eq $signal_name);
-  }
-
-  my @parents;
-  {
-    no strict 'refs';
-    @parents = @{"$class\::ISA"};
-  }
-  foreach my $parent (@parents) {
-    my $retval = _signal_query ($parent, $signal_name);
-    return $retval if (defined $retval);
-  }
-  return undef;
-}
-
 sub _session_autoconnect_helper {
   my ($handler_name, $gobject, $signal_name, $signal_data,
       $connect_object, $is_after, $session_object, $event_name) = @_;
@@ -105,10 +75,7 @@ sub _session_autoconnect_helper {
   my $session = $poe_kernel->get_active_session;
   my $handler;
 
-  ## not released yet
-  #my $sig_info = $gobject->signal_query ($signal_name);
-  # instead we do this
-  my $sig_info = _signal_query ($gobject, $signal_name);
+  my $sig_info = $gobject->signal_query ($signal_name);
 
   if (!defined $sig_info->{'return_type'}) {
 	$handler = $session->postback ($event_name);
@@ -125,18 +92,7 @@ sub _session_autoconnect_helper {
   }
 }
 
-=head1 CONSTRUCTORS
-
-=head2 new
-
-this is not supported because there is no nice way to find out our
-additional arguments. And now deprecated in POE::Session.
-
-=cut
-
-sub new {
-	die "Not supported. use create.";
-}
+=head1 CONSTRUCTOR
 
 =head2 create (%args)
 
@@ -256,12 +212,17 @@ sub gladexml {
 
 C<POE::Session> and C<Gtk2::GladeXML>
 
-=head1 AUTHORS & COPYRIGHT
+=head1 AUTHOR
 
-This module is Copyright 2002-2005 Martijn van Beers. It is free
-software; you may reproduce and/or modify it under the terms of
-the GPL licence v2.0. See the file COPYING in the source tarball
-for more information
+Martijn van Beers  <martijn@cpan.org>
+
+=head1 LICENSE
+
+This module is free software; you may reproduce and/or modify it
+under the terms of the GPL license v2.0. See the file LICENSE in
+the source tarball for more information
+
+=head2 ACKNOWLEDGEMENTS
 
 This module wouldn't be half as good without the invaluable advice
 of Rocco Caputo and Scott Arrington.
